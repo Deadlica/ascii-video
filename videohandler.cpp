@@ -1,28 +1,50 @@
 #include "videohandler.hpp"
+#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/Text.hpp>
+#include <SFML/Graphics/View.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/VideoMode.hpp>
+#include <SFML/Window/WindowStyle.hpp>
+#include <cstdlib>
+#include <iostream>
 
 VideoHandler::VideoHandler(std::string video_name)
 :video_name(video_name), capture(video_name),
-frame_rate(capture.get(cv::CAP_PROP_FPS)), total_frames(capture.get(cv::CAP_PROP_FRAME_COUNT)),
-window(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), video_name, sf::Style::Close) {
+frame_rate(capture.get(cv::CAP_PROP_FPS)), total_frames(capture.get(cv::CAP_PROP_FRAME_COUNT)) {
     if(!capture.isOpened()) {
         std::cerr << "Couldn't open " << video_name << std::endl;
         abort();
     }
-    window.setFramerateLimit(frame_rate);
-    window.setPosition(sf::Vector2i(0, 0));
-    window.setVisible(false);
 
     this->video_name.resize(video_name.size() - 4);
     music.openFromFile(this->video_name + ".ogg");
 }
 
 void VideoHandler::handle() {
-    //Convert frames as grayscale images
-    download_frames();
-    capture.release();
+    if(folder_exists()) {
+        system("sleep 2");
+        system("clear");
+        std::cout << "It seems like you already have the frames for this video, would you still like to download them again? [Y/n] ";
+        std::string input;
+        std::getline(std::cin, input);
+        if(input != "Y" && input != "y") {
+            return;
+        }
+    }
+        //Convert frames as grayscale images
+        download_frames();
+        capture.release();
 
-    //Converts the images to .txt files
-    convert_frames();
+        //Converts the images to .txt files
+        convert_frames();
+}
+
+bool VideoHandler::folder_exists() {
+    struct stat buffer;
+    if(!stat(video_name.c_str(), &buffer)) {
+        return true;
+    }
+    return false;
 }
 
 void VideoHandler::play() {
@@ -31,8 +53,14 @@ void VideoHandler::play() {
     sf::Font monospace;
     monospace.loadFromFile("NotoSansMono-Bold.ttf");
     sf::Text display_frame("", monospace, FONT_SIZE);
+    display_frame.setString("@");
+    double char_width_ratio = display_frame.getGlobalBounds().height / display_frame.getGlobalBounds().width;
+    display_frame.setScale(char_width_ratio, 1);
     display_frame.setFillColor(sf::Color::Black);
     display_frame.setLineSpacing(0.75);
+    display_frame.setLetterSpacing(0.75);
+    std::cout << display_frame.getGlobalBounds().width << ", " << display_frame.getGlobalBounds().height << std::endl;
+
 
     for(int i = 1; i <= total_frames; i++) {
         std::ifstream txt_frame(video_name + "/txt_frames/frame" + std::to_string(i) + ".txt");
@@ -41,9 +69,14 @@ void VideoHandler::play() {
         txt_frame.close();
         frames.push_back(stream.str());
     }
+
+    window.create(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), video_name, sf::Style::Close);
+    //window.setVisible(false);
+    window.setFramerateLimit(frame_rate);
+    window.setPosition(sf::Vector2i(0, 0));
     
     music.play();
-    window.setVisible(true);
+    //window.setVisible(true);
     for(int i = 0; i < frames.size(); i++) {
         window.clear(sf::Color::White);
 
@@ -51,8 +84,16 @@ void VideoHandler::play() {
         printf("%s", dispay_frame.c_str());         instead of sfml window
         printf("\n");
 */
+        sf::Event event;                            //This is to avoid SFML giving the
+        while(window.pollEvent(event)) {            //"window is not responding" error message
+            if(event.type == sf::Event::Closed) {
+                window.close();
+            }
+        }
+
 
         display_frame.setString(frames[i]);
+        std::cout << display_frame.getGlobalBounds().height << "x" << display_frame.getGlobalBounds().width << std::endl;
         window.draw(display_frame);
         window.display();
     }
@@ -111,12 +152,16 @@ void VideoHandler::convert_frames() {
 void VideoHandler::to_txt() {
     using pixel = cv::Vec3b;
     std::string str_frame = "";
+    sf::Text dummy_text;
 
     cv::Mat resized_frame;
-    auto screen = window.getSize();
-    double x = (double)screen.x / frame.size().width / FONT_SIZE;
-    double y = (double)screen.y / frame.size().height / FONT_SIZE;
+    double y = (double)sf::VideoMode::getDesktopMode().height / frame.size().height / (FONT_SIZE + 0.75);
+    double x = (double)sf::VideoMode::getDesktopMode().width / frame.size().width / (FONT_SIZE + 0.75);
+    //std::cout << x << ", " << y << std::endl;
+    //system("sleep 5s");
+
     cv::resize(frame, resized_frame, cv::Size(), x, y);
+    
 
     for(int y = 0; y < resized_frame.rows; y++) {
         for(int x = 0; x < resized_frame.cols; x++) {

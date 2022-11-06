@@ -13,6 +13,7 @@
 #include <SFML/System.hpp>
 #include <SFML/Audio.hpp>
 #include <iostream>
+#include <filesystem>
 
 class VideoHandler {
 public:
@@ -22,6 +23,7 @@ public:
     void play();
 
 private:
+    bool folder_exists();
     void download_frames();
     void gray_scale();
     void convert_frames();
@@ -33,9 +35,9 @@ private:
     int frame_rate, total_frames, frame_number = 1;
     cv::Mat frame;
     std::string path;
-    std::vector<char> graphics = {'@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', '.'};
+    std::vector<char> graphics = {'@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', ' '};
     sf::RenderWindow window;
-    sf::Music music;
+    sf::Music music;    
     const int FONT_SIZE = 14;
 };
 
