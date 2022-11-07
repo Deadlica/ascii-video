@@ -156,9 +156,7 @@ void VideoHandler::to_txt() {
 
     cv::Mat resized_frame;
     double y = (double)sf::VideoMode::getDesktopMode().height / frame.size().height / (FONT_SIZE + 0.75);
-    double x = (double)sf::VideoMode::getDesktopMode().width / frame.size().width / (FONT_SIZE + 0.75);
-    //std::cout << x << ", " << y << std::endl;
-    //system("sleep 5s");
+    double x = (double)sf::VideoMode::getDesktopMode().width / frame.size().width / (FONT_SIZE / 1.565);
 
     cv::resize(frame, resized_frame, cv::Size(), x, y);
     
