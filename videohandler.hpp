@@ -38,7 +38,7 @@ private:
     std::vector<char> graphics = {'@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', ' '};
     sf::RenderWindow window;
     sf::Music music;    
-    const int FONT_SIZE = 14;
+    const int FONT_SIZE = 12;
 };
 
 #endif
